@@ -25,7 +25,7 @@ const DrawingBoard: React.FC<DrawingBoardProps> = (props: DrawingBoardProps) => 
     let history: DrawingLine[] = [];
 
     // save the reference to the canvas html element
-    const canvasRef = useRef(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
 
     let currentDrawing = {
         state: drawingState.NotStarted,
@@ -58,17 +58,18 @@ const DrawingBoard: React.FC<DrawingBoardProps> = (props: DrawingBoardProps) => 
 
         if (currentDrawing.state === drawingState.Completed) {
 
+            let line: DrawingLine = {
+                x1: currentDrawing.x1,
+                y1: currentDrawing.y1, 
+                x2: currentDrawing.x2, 
+                y2: currentDrawing.y2
+            };
+
             // draw line on the canvas
-            drawHistoryLine(currentDrawing.x1, currentDrawing.y1, currentDrawing.x2, currentDrawing.y2);
+            drawHistoryLine(line);
 
             // push to the history
-            history.push(
-                {
-                    x1: currentDrawing.x1,
-                    y1: currentDrawing.y1,
-                    x2: currentDrawing.x2,
-                    y2: currentDrawing.y2,
-                })
+            history.push(line);
 
             // save in local storage
             localStorage[props.index] = JSON.stringify(history);
@@ -130,39 +131,17 @@ const DrawingBoard: React.FC<DrawingBoardProps> = (props: DrawingBoardProps) => 
         let img = new Image();
 
         img.onload = function () {
-            var canvas = canvasRef.current as unknown as HTMLCanvasElement;
+            let canvas = canvasRef.current as HTMLCanvasElement;
 
             if (canvas.getContext) {
                 var context = canvas.getContext('2d');
 
                 if (context) {
-                    context.drawImage(img, 0, 0);
+                    context.drawImage(img, 0, 0,canvas.width, canvas.height);
                 }
             }
         };
         img.src = props.imageUrl;
-
-        // wait for image to load, set it's source 
-        // await new Promise(r => {
-        //     img.onload = r;
-        //     img.src = url;
-
-        //     var canvas = canvasRef.current as unknown as HTMLCanvasElement;
-
-        //     if (canvas.getContext) {
-        //         var context = canvas.getContext('2d');
-
-        //         if (context) {
-
-        //             // canvas.height = img.height;
-        //             // canvas.width = img.width;
-        //             img.height = canvas.height;
-        //             img.width = canvas.width;
-        //             context.drawImage(img, 0, 0);
-        //         }
-        //     }
-        // });
-
 
     }
 
@@ -180,7 +159,11 @@ const DrawingBoard: React.FC<DrawingBoardProps> = (props: DrawingBoardProps) => 
 
             // apply history on canvas
             for (let i = 0; i < savedHistory.length; i++) {
-                drawHistoryLine(savedHistory[i].x1, savedHistory[i].y1, savedHistory[i].x2, savedHistory[i].y2);
+                drawHistoryLine({
+                    x1: savedHistory[i].x1,
+                    y1: savedHistory[i].y1, 
+                    x2:savedHistory[i].x2,
+                    y2:savedHistory[i].y2});
             }
 
         }
@@ -194,22 +177,25 @@ const DrawingBoard: React.FC<DrawingBoardProps> = (props: DrawingBoardProps) => 
 
     });
 
-    const drawHistoryLine = (x1: number, y1: number, x2: number, y2: number) => {
+    const drawHistoryLine = (line: DrawingLine) => {
 
-        var canvas = canvasRef.current as unknown as HTMLCanvasElement;
+        let canvas: HTMLCanvasElement | null = canvasRef.current;
 
-        if (canvas.getContext) {
-            var context = canvas.getContext('2d');
+        if (canvas !== null) {
 
-            if (context) {
-                // Reset the current path
-                context.beginPath();
-                // Staring point (x1,y1)
-                context.moveTo(x1, y1);
-                // End point (x2,y2)
-                context.lineTo(x2, y2);
-                // Make the line visible
-                context.stroke();
+            if (canvas.getContext) {
+                var context = canvas.getContext('2d');
+
+                if (context) {
+                    // Reset the current path
+                    context.beginPath();
+                    // Staring point (x1,y1)
+                    context.moveTo(line.x1, line.y1);
+                    // End point (x2,y2)
+                    context.lineTo(line.x2, line.y2);
+                    // Make the line visible
+                    context.stroke();
+                }
             }
         }
     };
